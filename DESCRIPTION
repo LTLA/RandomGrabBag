@@ -1,0 +1,12 @@
+Package: RandomGrabBag
+Version: 0.666.0
+Title: Random Grab Bag of OSCA Functions
+Authors@R:
+    person("Aaron", "Lun", email="infinite.monkeys.with.keyboards@gmail.com", role=c("aut", "cre"))
+Description: Provides a set of miscellaneous functions that should
+    really find better homes in proper Bioconductor packages, but
+    for the time being, they don't have a place to go.
+Depends:
+    SingleCellExperiment,
+    S4Vectors
+RoxygenNote: 7.0.2
