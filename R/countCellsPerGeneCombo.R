@@ -50,6 +50,7 @@
 #' @export
 #' @importFrom S4Vectors selfmatch
 #' @importFrom IRanges IntegerList
+#' @importFrom SummarizedExperiment SummarizedExperiment
 countCellsPerGeneCombo <- function(x, gene.field, group=NULL, cov.field=NULL) {
     if (!is.null(cov.field)) {
         cov <- x[,cov.field]

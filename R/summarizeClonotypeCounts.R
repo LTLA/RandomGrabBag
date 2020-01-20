@@ -20,7 +20,7 @@
 #' Larger values indicate that cells are concentrated within a small number of clonotypes.
 #'
 #' If \code{use.gini=TRUE}, the output will contain the numeric \code{"gini"} column,
-#' containing the Ginit index for clonotype diversity in each group.
+#' containing the Gini index for clonotype diversity in each group.
 #' Larger values indicate that cells are concentrated within a small number of clonotypes.
 #'
 #' If \code{use.top} is specified, the output will contain the numeric \code{"topX"} columns,
@@ -42,7 +42,7 @@
 #' out <- countCellsPerClonotype(y, "clonotype",
 #'    group=sample(3, length(y), replace=TRUE))
 #'
-#' summarizeClonalExpansion(out)
+#' summarizeClonotypeCounts(out)
 #' 
 #' @export
 #' @importFrom S4Vectors DataFrame
@@ -55,17 +55,11 @@ summarizeClonotypeCounts <- function(counts, use.mean=TRUE, use.gini=TRUE, use.t
     }
 
     if (use.gini) {
-        # Discrete version of the gini index.
-        stats[["gini"]] <- vapply(counts, FUN.VALUE=0, FUN=function(y) {
-            total <- sum(y)
-            1- sum(cumsum(sort(y))) / (total * (total + 1)/2)
-        })
+        stats[["gini"]] <- vapply(counts, FUN=.compute_gini, FUN.VALUE=0)
     }
 
-    for (i in use.top) {
-        stats[[paste0("top", i)]] <- vapply(counts, FUN.VALUE=0, FUN=function(y) {
-            sum(head(sort(y, decreasing=TRUE), i))/sum(y) 
-        })
+    for (n in use.top) {
+        stats[[paste0("top", n)]] <- vapply(counts, FUN=.compute_top_prop, n=n, FUN.VALUE=0)
     }
 
     if (length(use.hill)) {
@@ -76,4 +70,15 @@ summarizeClonotypeCounts <- function(counts, use.mean=TRUE, use.gini=TRUE, use.t
     }
 
     stats
+}
+
+# Discrete version of the gini index.
+.compute_gini <- function(y) {
+    total <- sum(y)
+    1- sum(cumsum(sort(y))) / (total * (total + 1)/2)
+}
+
+#' @importFrom utils head
+.compute_top_prop <- function(y, n) {
+    sum(head(sort(y, decreasing=TRUE), n))/sum(y) 
 }
