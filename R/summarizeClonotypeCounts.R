@@ -1,4 +1,4 @@
-#' Summarize clonal expansion
+#' Summarize clonotype counts 
 #'
 #' Generate some summary statistics for clonal expansion based on the number of cells per clonotype.
 #'
@@ -47,7 +47,7 @@
 #' @export
 #' @importFrom S4Vectors DataFrame
 #' @importFrom alakazam calcDiversity
-summarizeClonalExpansion <- function(counts, use.mean=TRUE, use.gini=TRUE, use.top=c(5, 20, 100), use.hill=0:2) {
+summarizeClonotypeCounts <- function(counts, use.mean=TRUE, use.gini=TRUE, use.top=c(5, 20, 100), use.hill=0:2) {
     stats <- DataFrame(row.names=names(counts))
 
     if (use.mean) {
