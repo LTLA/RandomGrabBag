@@ -1,6 +1,6 @@
-#' UMIs per read per cell
+#' Read to UMI per cell
 #'
-#' Compute the UMI-to-read ratio for each cell.
+#' Compute the read-to-UMI ratio for each cell.
 #'
 #' @param x A \linkS4class{SplitDataFrameList} where each DataFrame is a cell and each row is a sequence.
 #' @param read.field String containing the name of the column containing the read count data.
@@ -8,31 +8,32 @@
 #'
 #' @author Aaron Lun
 #'
-#' @return A numeric vector containing the ratio of UMIs to reads for each cell.
+#' @return A numeric vector containing the ratio of reads to UMI for each cell.
 #'
 #' @details
 #' This function is designed to evaluate the degree of redundancy in the read coverage of each UMI.
-#' Low values indicate that the reads are highly redundant such that little can be gained from further sequencing.
+#' High values indicate that the reads are highly redundant such that little can be gained from further sequencing.
 #'
-#' Note that, in repertoire data, the definition of \dQuote{low} is somewhat different from usual.
+#' Note that, in repertoire data, the definition of \dQuote{high} is somewhat different from usual.
 #' This is because only deeply sequenced transcripts will survive the assembly and annotation process,
-#' such that the reported sequences are likely to be biased towards very low UMI:read ratios.
-#' Values below 0.01 are typical.
+#' such that the reported sequences are likely to be biased towards very high read-to-UMI ratios.
+#' Values around 1000 seem to be typical.
+#'
+#' If a cell has multiple sequences, their counts are simply added together across sequences to compute the per-cell ratio.
 #' 
 #' @examples
 #' df <- data.frame(
 #'     cell.id=sample(LETTERS, 30, replace=TRUE),
 #'     v_gene=sample(c("TRAV1", "TRAV2", "TRAV3"), 30, replace=TRUE),
 #'     j_gene=sample(c("TRAJ4", "TRAJ5", "TRAV6"), 30, replace=TRUE),
-#'     reads=rnbinom(30, mu=20, size=0.5)
+#'     reads=rnbinom(30, mu=20, size=0.5),
 #'     umis=rnbinom(30, mu=2, size=1)
 #' )
 #'
 #' y <- splitToCells(df, field="cell.id")
-#' umiPerReadPerCell(y, "reads", "umis")
+#' readToUmiPerCell(y, "reads", "umis")
 #' 
 #' @export
-umiPerReadPerCell <- function(x, read.field, umi.field) {
-    sum(x[,umi.field])/sum(x[,read.field])
+readToUmiPerCell <- function(x, read.field, umi.field) {
+    sum(x[,read.field])/sum(x[,umi.field])
 }
-
