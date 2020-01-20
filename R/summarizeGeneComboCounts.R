@@ -26,6 +26,7 @@
 #' while \code{"hill1"} and \code{"hill2"} quantify the evenness of the distribution of cells across gene combinations.
 #' (\code{"hill2"} differs from \code{"hill1"} in that the former gives more weight to dominant gene combinations.)
 #'
+#' See \code{\link{countCellsPerGeneCombo}} for an explanation of why downsampling is turned on by default.
 #' @examples
 #' df <- data.frame(
 #'     cell.id=sample(LETTERS, 30, replace=TRUE),
@@ -43,12 +44,17 @@
 #' @importFrom S4Vectors DataFrame
 #' @importFrom alakazam calcDiversity
 #' @importFrom SummarizedExperiment assay
-summarizeGeneComboCounts <- function(counts, use.gini=TRUE, use.top=c(5, 20, 100), use.hill=0:2) {
-    stats <- DataFrame(row.names=colnames(counts))
-
+summarizeGeneComboCounts <- function(counts, use.gini=TRUE, use.top=c(5, 20, 100), use.hill=0:2,
+    downsample=TRUE, down.ncells=NULL)
+{
     if (is(counts, "SummarizedExperiment")) {
         counts <- assay(counts)
     }
+    if (downsample) {
+        counts <- .downsample_matrix(counts, down.ncells)
+    }
+
+    stats <- DataFrame(row.names=colnames(counts))
     idx <- seq_len(ncol(counts))
 
     if (use.gini) {

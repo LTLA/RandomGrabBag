@@ -6,6 +6,9 @@
 #' @param gene.field Character vector of names of columns of \code{x} containing the genes of interest (e.g., VDJ components).
 #' @param group Factor of length equal to \code{x} indicating the group to which each cell belongs.
 #' @param cov.field String specifying the column of \code{x} containing the read/UMI coverage.
+#' @param downsample Logical scalar indicating whether downsampling should be performed.
+#' @param down.ncells Integer scalar indicating the number of cells to downsample each group to.
+#' Defaults to the number of cells in the smallest group in \code{group}.
 #'
 #' @return A \linkS4class{SummarizedExperiment} where each row corresponds to a unique gene combination
 #' and each column corresponds to a level of \code{group} (or all cells, if \code{group=NULL}).
@@ -20,15 +23,22 @@
 #' This can be useful to examine the effect of particular experimental conditions or the behavior of different cell states,
 #' especially if the specific biological function (e.g., antigen) of each gene combination is known in advance.
 #'
-#' We quote \dQuote{expression} as this is defined in terms of number of cells expressing the gene,
-#' rather than the more typical quantity of the number of reads or UMIs assigned to that gene.
-#' Note that this raises some difficult questions about normalization when the sequencing coverage varies between groups;
-#' we assume that such changes have the same scaling effect on the probability of detecting each gene combination,
-#' such that it cancels out after normalizing by the total number of cells.
-#'
 #' If \code{cov.field} is set, only the most high-abundance sequence is used from each cell.
 #' It is probably safest to set this field to avoid potential complications from dependencies between counts,
 #' though any problems are also probably minor.
+#'
+#' @section Normalization for cell number:
+#' We quote \dQuote{expression} as this is defined in terms of number of cells expressing the gene,
+#' rather than the more typical quantity of the number of reads or UMIs assigned to that gene.
+#' If the sequencing coverage varies between groups, 
+#' we assume that such changes have the same scaling effect on the probability of detecting each gene combination,
+#' which cancels out after normalizing by the total number of cells.
+#'
+#' However, the above assumption only works for differential expression analyses between groups.
+#' When comparing other metrics such as diversity values (see \code{\link{summarizeGeneComboCounts}}),
+#' scaling normalization is not sufficient and we instead resort to downsampling all groups to the same total cell number.
+#' This is achieved with \code{downsample=TRUE} with the automatically determined \code{down.ncells},
+#' which eliminates uninteresting technical differences between groups from cell capture efficiency or sample size.
 #'
 #' @examples
 #' df <- data.frame(
@@ -51,7 +61,7 @@
 #' @importFrom S4Vectors selfmatch
 #' @importFrom IRanges IntegerList
 #' @importFrom SummarizedExperiment SummarizedExperiment
-countCellsPerGeneCombo <- function(x, gene.field, group=NULL, cov.field=NULL) {
+countCellsPerGeneCombo <- function(x, gene.field, group=NULL, cov.field=NULL, downsample=FALSE, down.ncells=NULL) {
     if (!is.null(cov.field)) {
         cov <- x[,cov.field]
         x <- x[cov==max(cov)]
@@ -69,7 +79,21 @@ countCellsPerGeneCombo <- function(x, gene.field, group=NULL, cov.field=NULL) {
     }
     mat <- as.matrix(mat)
 
+    if (downsample) {
+        mat <- .downsample_matrix(mat, down.ncells)
+    }
+
     rownames(mat) <- NULL
     rownames(y) <- NULL
     SummarizedExperiment(rowData=y, assays=list(counts=mat))
+}
+
+.downsample_matrix <- function(mat, down.ncells) {
+    if (is.null(down.ncells)) {
+        down.ncells <- min(colSums(mat))
+    }
+    for (j in seq_len(ncol(mat))) {
+        mat[,j] <- .downsample_counts(mat[,j], down.ncells)
+    }
+    mat
 }

@@ -1,4 +1,4 @@
-#' Count clonotypes
+#' Count cells per clonotype
 #' 
 #' Count the number of cells that exhibit each clonotype.
 #'
@@ -8,7 +8,7 @@
 #' @param cov.field String specifying the column of \code{x} containing the read/UMI coverage.
 #' @param downsample Logical scalar indicating whether downsampling should be performed.
 #' @param down.ncells Integer scalar indicating the number of cells to downsample each group to.
-#' Defaults to the size of the smallest group in \code{group}.
+#' Defaults to the smallest number of sequence-containing cells across all levels in \code{group}.
 #'
 #' @return An \linkS4class{IntegerList} containing one integer vector per level of \code{group} 
 #' (or all cells, if \code{group=NULL}).
@@ -34,25 +34,22 @@
 #'
 #' Cells without any clonotype are completely ignored within this function,
 #' as they do not contribute to any of the clonotype counts.
-#' For example: technically speaking, \code{down.cells} defaults to the smallest number of \emph{clonotype-containing} cells
-#' across all levels of \code{group}, not just the size of the smallest group.
 #'
 #' @section Normalization for cell number:
-#' That said, one difficulty with quantification is that the average cells per clonotype and number of multiple-cell clonotypes
+#' One difficulty with quantification is that the average cells per clonotype and number of multiple-cell clonotypes
 #' is not a linear function with respect to the number of cells.
 #' Increasing the number of cells may result in more new clonotypes or more cells assigned to previously observed clonotypes, 
 #' depending on the (unknown) clonotype composition of the population.
-#' This complicates comparisons between groups that contain different numbers of cells.
+#' This complicates comparisons between groups that contain different numbers of cells,
+#' e.g., diversity metrics in \code{\link{summarizeClonotypeCounts}} cannot be directly compared between groups.
 #'
-#' In this function, we solve this problem by simply downsampling on the cells
-#' so that all levels of \code{group} have the same number of cells.
-#' This avoids making any assumptions about the clonotype composition of the vast majority of unobserved cells.
-#' We can then ignore technical differences in, e.g., cell capture rates when comparing between groups.
+#' We solve this problem by simply downsampling so that all levels of \code{group} have the same number of cells.
+#' This eliminates uninteresting technical differences in, e.g., cell capture rates when comparing between groups,
+#' without making any assumptions about the clonotype composition of the vast majority of unobserved cells.
 #' Of course, this also eliminates the biological effect of the increase in the number of cells upon expansion,
-#' but any such expansion should still be detectable via chnages to the clonotype composition in the remaining cells.
+#' but any such expansion should hopefully still be detectable via changes in clonotype composition among the remaining cells.
 #' 
-#' As discussed in \code{\link{countCellsPerGeneCombo}},
-#' we do not adjust for differences in sequencing depth across groups.
+#' As discussed in \code{\link{countCellsPerGeneCombo}}, we do not adjust for differences in sequencing depth across groups.
 #' Our assumption is that any change in coverage manifests as a scaling of the probability of detecting a clonotype
 #' where the magnitude of scaling is the same across all clonotypes.
 #' If so, differences in coverage translate to differences in the number of cells with a clonotype,
@@ -74,8 +71,7 @@
 #' 
 #' @export
 #' @importFrom IRanges IntegerList
-#' @importFrom S4Vectors Rle
-countCellsPerClonotype <- function(x, clone.field, group=NULL, cov.field=NULL, downsample=TRUE, down.cells=NULL) {
+countCellsPerClonotype <- function(x, clone.field, group=NULL, cov.field=NULL, downsample=FALSE, down.ncells=NULL) {
     if (!is.null(cov.field)) {
         cov <- x[,cov.field]
         x <- x[cov==max(cov)]
@@ -89,23 +85,35 @@ countCellsPerClonotype <- function(x, clone.field, group=NULL, cov.field=NULL, d
         out <- lapply(out, table)
     }
 
-    if (downsample && is.null(down.cells)) {
-        down.cells <- min(vapply(out, sum, 0L))
-    }
-
     for (i in seq_along(out)) {
         current <- out[[i]]
-
-        if (downsample) {
-            stuff <- Rle(names(current), current)
-            down <- stuff[sort(sample(length(stuff), down.cells))]
-            current <- table(down)
-        }
-
         current <- sort(current, decreasing=TRUE)
         out[[i]] <- as.integer(current)
         names(out[[i]]) <- names(current)
     }
 
+    if (downsample) {
+        out <- .downsample_list(out, down.ncells)
+    }
+
     IntegerList(out)
+}
+
+#' @importFrom S4Vectors Rle runLength runValue
+.downsample_counts <- function(x, n) {
+    stuff <- Rle(seq_along(x), x)
+    down <- stuff[sort(sample(length(stuff), n))]
+
+    output <- x
+    output[] <- 0L
+    output[runValue(down)] <- runLength(down)
+
+    output
+}
+
+.downsample_list <- function(counts, down.ncells) {
+    if (is.null(down.ncells)) {
+        down.ncells <- min(vapply(counts, sum, 0L))
+    }
+    lapply(counts, .downsample_counts, n=down.ncells)
 }

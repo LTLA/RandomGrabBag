@@ -8,6 +8,7 @@
 #' @param use.gini Logical scalar indicating whether to report the Gini index.
 #' @param use.top Integer vector specifying the number of clonotypes to use to compute the top percentage.
 #' @param use.hill Integer scalar specifying the orders to use to compute Hill numbers.
+#' @inheritParams countCellsPerClonotype
 #' 
 #' @return A \linkS4class{DataFrame} with one row per group in \code{counts},
 #' containing summary statistics on the clonal expansion in that group.
@@ -31,7 +32,8 @@
 #' \code{"hill0"} is simply the number of observed clonotypes (i.e., species richness)
 #' while \code{"hill1"} and \code{"hill2"} quantify the evenness of the distribution of cells across clonotypes.
 #' (\code{"hill2"} differs from \code{"hill1"} in that the former gives more weight to dominant clonotypes.)
-#' 
+#'
+#' See \code{\link{countClonotypesPerCell}} for why downsampling is turned on by default.
 #' @examples
 #' df <- data.frame(
 #'     cell.id=sample(LETTERS, 30, replace=TRUE),
@@ -47,7 +49,14 @@
 #' @export
 #' @importFrom S4Vectors DataFrame
 #' @importFrom alakazam calcDiversity
-summarizeClonotypeCounts <- function(counts, use.mean=TRUE, use.gini=TRUE, use.top=c(5, 20, 100), use.hill=0:2) {
+summarizeClonotypeCounts <- function(counts, use.mean=TRUE, use.gini=TRUE, 
+    use.top=c(5, 20, 100), use.hill=0:2,
+    downsample=TRUE, down.ncells=NULL)
+{
+    if (downsample) {
+        counts <- .downsample_list(counts, down.ncells)
+    }
+
     stats <- DataFrame(row.names=names(counts))
 
     if (use.mean) {
