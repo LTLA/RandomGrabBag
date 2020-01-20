@@ -9,7 +9,9 @@ summarizeClonotypeCounts(
   use.mean = TRUE,
   use.gini = TRUE,
   use.top = c(5, 20, 100),
-  use.hill = 0:2
+  use.hill = 0:2,
+  downsample = TRUE,
+  down.ncells = NULL
 )
 }
 \arguments{
@@ -23,6 +25,11 @@ Each vector corresponds to a group of cells and contains the number of cells for
 \item{use.top}{Integer vector specifying the number of clonotypes to use to compute the top percentage.}
 
 \item{use.hill}{Integer scalar specifying the orders to use to compute Hill numbers.}
+
+\item{downsample}{Logical scalar indicating whether downsampling should be performed.}
+
+\item{down.ncells}{Integer scalar indicating the number of cells to downsample each group to.
+Defaults to the smallest number of sequence-containing cells across all levels in \code{group}.}
 }
 \value{
 A \linkS4class{DataFrame} with one row per group in \code{counts},
@@ -37,7 +44,7 @@ containing the average number of cells per clonotype computed across all clonoty
 Larger values indicate that cells are concentrated within a small number of clonotypes.
 
 If \code{use.gini=TRUE}, the output will contain the numeric \code{"gini"} column,
-containing the Ginit index for clonotype diversity in each group.
+containing the Gini index for clonotype diversity in each group.
 Larger values indicate that cells are concentrated within a small number of clonotypes.
 
 If \code{use.top} is specified, the output will contain the numeric \code{"topX"} columns,
@@ -48,6 +55,8 @@ If \code{use.hill} is specified, the output will contain numeric \code{"hillX"} 
 \code{"hill0"} is simply the number of observed clonotypes (i.e., species richness)
 while \code{"hill1"} and \code{"hill2"} quantify the evenness of the distribution of cells across clonotypes.
 (\code{"hill2"} differs from \code{"hill1"} in that the former gives more weight to dominant clonotypes.)
+
+See \code{\link{countClonotypesPerCell}} for why downsampling is turned on by default.
 }
 \examples{
 df <- data.frame(
@@ -59,7 +68,7 @@ y <- splitToCells(df, field="cell.id")
 out <- countCellsPerClonotype(y, "clonotype",
    group=sample(3, length(y), replace=TRUE))
 
-summarizeClonalExpansion(out)
+summarizeClonotypeCounts(out)
 
 }
 \author{

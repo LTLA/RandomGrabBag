@@ -4,7 +4,14 @@
 \alias{countCellsPerGeneCombo}
 \title{Count gene combinations}
 \usage{
-countCellsPerGeneCombo(x, gene.field, group = NULL, cov.field = NULL)
+countCellsPerGeneCombo(
+  x,
+  gene.field,
+  group = NULL,
+  cov.field = NULL,
+  downsample = FALSE,
+  down.ncells = NULL
+)
 }
 \arguments{
 \item{x}{A \linkS4class{SplitDataFrameList} where each \linkS4class{DataFrame} is a cell and each row is a sequence.}
@@ -14,6 +21,11 @@ countCellsPerGeneCombo(x, gene.field, group = NULL, cov.field = NULL)
 \item{group}{Factor of length equal to \code{x} indicating the group to which each cell belongs.}
 
 \item{cov.field}{String specifying the column of \code{x} containing the read/UMI coverage.}
+
+\item{downsample}{Logical scalar indicating whether downsampling should be performed.}
+
+\item{down.ncells}{Integer scalar indicating the number of cells to downsample each group to.
+Defaults to the number of cells in the smallest group in \code{group}.}
 }
 \value{
 A \linkS4class{SummarizedExperiment} where each row corresponds to a unique gene combination
@@ -30,16 +42,25 @@ i.e., does one particular group of cells express a particular gene combination m
 This can be useful to examine the effect of particular experimental conditions or the behavior of different cell states,
 especially if the specific biological function (e.g., antigen) of each gene combination is known in advance.
 
-We quote \dQuote{expression} as this is defined in terms of number of cells expressing the gene,
-rather than the more typical quantity of the number of reads or UMIs assigned to that gene.
-Note that this raises some difficult questions about normalization when the sequencing coverage varies between groups;
-we assume that such changes have the same scaling effect on the probability of detecting each gene combination,
-such that it cancels out after normalizing by the total number of cells.
-
 If \code{cov.field} is set, only the most high-abundance sequence is used from each cell.
 It is probably safest to set this field to avoid potential complications from dependencies between counts,
 though any problems are also probably minor.
 }
+\section{Normalization for cell number}{
+
+We quote \dQuote{expression} as this is defined in terms of number of cells expressing the gene,
+rather than the more typical quantity of the number of reads or UMIs assigned to that gene.
+If the sequencing coverage varies between groups, 
+we assume that such changes have the same scaling effect on the probability of detecting each gene combination,
+which cancels out after normalizing by the total number of cells.
+
+However, the above assumption only works for differential expression analyses between groups.
+When comparing other metrics such as diversity values (see \code{\link{summarizeGeneComboCounts}}),
+scaling normalization is not sufficient and we instead resort to downsampling all groups to the same total cell number.
+This is achieved with \code{downsample=TRUE} with the automatically determined \code{down.ncells},
+which eliminates uninteresting technical differences between groups from cell capture efficiency or sample size.
+}
+
 \examples{
 df <- data.frame(
     cell.id=sample(LETTERS, 30, replace=TRUE),
