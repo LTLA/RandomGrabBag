@@ -1,0 +1,111 @@
+#' Count clonotypes
+#' 
+#' Count the number of cells that exhibit each clonotype.
+#'
+#' @param x A \linkS4class{SplitDataFrameList} where each \linkS4class{DataFrame} is a cell and each row is a sequence.
+#' @param clone.field String specifying the columns of \code{x} containing the clonotype identity.
+#' @param group Factor of length equal to \code{x} indicating the group to which each cell belongs.
+#' @param cov.field String specifying the column of \code{x} containing the read/UMI coverage.
+#' @param downsample Logical scalar indicating whether downsampling should be performed.
+#' @param down.ncells Integer scalar indicating the number of cells to downsample each group to.
+#' Defaults to the size of the smallest group in \code{group}.
+#'
+#' @return An \linkS4class{IntegerList} containing one integer vector per level of \code{group} 
+#' (or all cells, if \code{group=NULL}).
+#' Each entry of the vector corresponds to a clonotype and contains the number of cells with that clonotype.
+#' Each vector is also sorted in decreasing order.
+#'
+#' @author Aaron Lun
+#'
+#' @details
+#' The aim of this function is to quantify clonal expansion based on the number of cells of a particular clonotype.
+#' Clonal expansion is of interest as it serves as a proxy for the strength of the immune response to antigens;
+#' we can then compare the degree of expansion between experimental conditions or cell states to gain some biological insights.
+#'
+#' Greater expansion manifests in the form of (i) more clonotypes with multiple cells
+#' and (ii) clonotypes with a greater number of cells.
+#' The exact effect probably depends on the nature of the antigen, e.g., the number of exposed epitopes,
+#' that determine whether the expansion is spread across a larger number of clones.
+#' See the \code{\link{summarizeClonalExpansion}} function for more details.
+#' 
+#' If \code{cov.field} is set, only the most high-abundance sequence is used from each cell.
+#' It is probably safest to set this field to avoid potential complications from dependencies between counts,
+#' though any problems are also probably minor.
+#'
+#' Cells without any clonotype are completely ignored within this function,
+#' as they do not contribute to any of the clonotype counts.
+#' For example: technically speaking, \code{down.cells} defaults to the smallest number of \emph{clonotype-containing} cells
+#' across all levels of \code{group}, not just the size of the smallest group.
+#'
+#' @section Normalization for cell number:
+#' That said, one difficulty with quantification is that the average cells per clonotype and number of multiple-cell clonotypes
+#' is not a linear function with respect to the number of cells.
+#' Increasing the number of cells may result in more new clonotypes or more cells assigned to previously observed clonotypes, 
+#' depending on the (unknown) clonotype composition of the population.
+#' This complicates comparisons between groups that contain different numbers of cells.
+#'
+#' In this function, we solve this problem by simply downsampling on the cells
+#' so that all levels of \code{group} have the same number of cells.
+#' This avoids making any assumptions about the clonotype composition of the vast majority of unobserved cells.
+#' We can then ignore technical differences in, e.g., cell capture rates when comparing between groups.
+#' Of course, this also eliminates the biological effect of the increase in the number of cells upon expansion,
+#' but any such expansion should still be detectable via chnages to the clonotype composition in the remaining cells.
+#' 
+#' As discussed in \code{\link{countCellsPerGeneCombo}},
+#' we do not adjust for differences in sequencing depth across groups.
+#' Our assumption is that any change in coverage manifests as a scaling of the probability of detecting a clonotype
+#' where the magnitude of scaling is the same across all clonotypes.
+#' If so, differences in coverage translate to differences in the number of cells with a clonotype,
+#' allowing us to use the same downsampling solution above.
+#'
+#' @examples
+#' df <- data.frame(
+#'     cell.id=sample(LETTERS, 30, replace=TRUE),
+#'     clonotype=sample(paste0("clonotype_", 1:5), 30, replace=TRUE)
+#' )
+#'
+#' y <- splitToCells(df, field="cell.id")
+#' out <- countCellsPerClonotype(y, "clonotype")
+#' out
+#'
+#' out2 <- countCellsPerClonotype(y, "clonotype",
+#'    group=sample(3, length(y), replace=TRUE))
+#' out2
+#' 
+#' @export
+#' @importFrom IRanges IntegerList
+#' @importFrom S4Vectors Rle
+countCellsPerClonotype <- function(x, clone.field, group=NULL, cov.field=NULL, downsample=TRUE, down.cells=NULL) {
+    if (!is.null(cov.field)) {
+        cov <- x[,cov.field]
+        x <- x[cov==max(cov)]
+    }
+
+    ids <- unlist(x[,clone.field])
+    if (is.null(group)) {
+        out <- list(table(ids))
+    } else {
+        out <- split(ids, rep(group, lengths(x)))
+        out <- lapply(out, table)
+    }
+
+    if (downsample && is.null(down.cells)) {
+        down.cells <- min(vapply(out, sum, 0L))
+    }
+
+    for (i in seq_along(out)) {
+        current <- out[[i]]
+
+        if (downsample) {
+            stuff <- Rle(names(current), current)
+            down <- stuff[sort(sample(length(stuff), down.cells))]
+            current <- table(down)
+        }
+
+        current <- sort(current, decreasing=TRUE)
+        out[[i]] <- as.integer(current)
+        names(out[[i]]) <- names(current)
+    }
+
+    IntegerList(out)
+}
