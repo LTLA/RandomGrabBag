@@ -8,7 +8,8 @@ summarizeClonalExpansion(
   counts,
   use.mean = TRUE,
   use.gini = TRUE,
-  use.top = c(5, 20, 100)
+  use.top = c(5, 20, 100),
+  use.hill = 0:2
 )
 }
 \arguments{
@@ -20,6 +21,8 @@ Each vector corresponds to a group of cells and contains the number of cells for
 \item{use.gini}{Logical scalar indicating whether to report the Gini index.}
 
 \item{use.top}{Integer vector specifying the number of clonotypes to use to compute the top percentage.}
+
+\item{use.hill}{Integer scalar specifying the orders to use to compute Hill numbers.}
 }
 \value{
 A \linkS4class{DataFrame} with one row per group in \code{counts},
@@ -40,6 +43,11 @@ Larger values indicate that cells are concentrated within a small number of clon
 If \code{use.top} is specified, the output will contain the numeric \code{"topX"} columns,
 containing the proportion of cells assigned to the top X clonotypes (where X is the value of each \code{use.top} entry).
 Larger values indicate that cells are concentrated within a small number of clonotypes.
+
+If \code{use.hill} is specified, the output will contain numeric \code{"hillX"} columns containing the Hill numbers.
+\code{"hill0"} is simply the number of observed clonotypes (i.e., species richness)
+while \code{"hill1"} and \code{"hill2"} quantify the evenness of the distribution of cells across clonotypes.
+(\code{"hill2"} differs from \code{"hill1"} in that the former gives more weight to dominant clonotypes.)
 }
 \examples{
 df <- data.frame(
