@@ -9,6 +9,7 @@
 #' @param downsample Logical scalar indicating whether downsampling should be performed.
 #' @param down.ncells Integer scalar indicating the number of cells to downsample each group to.
 #' Defaults to the number of cells in the smallest group in \code{group}.
+#' @param row.names Logical scalar indicating whether row names should be added by concatenating all gene names per combination.
 #'
 #' @return A \linkS4class{SummarizedExperiment} where each row corresponds to a unique gene combination
 #' and each column corresponds to a level of \code{group} (or all cells, if \code{group=NULL}).
@@ -61,7 +62,9 @@
 #' @importFrom S4Vectors selfmatch
 #' @importFrom IRanges IntegerList
 #' @importFrom SummarizedExperiment SummarizedExperiment
-countCellsPerGeneCombo <- function(x, gene.field, group=NULL, cov.field=NULL, downsample=FALSE, down.ncells=NULL) {
+countCellsPerGeneCombo <- function(x, gene.field, group=NULL, cov.field=NULL, 
+    downsample=FALSE, down.ncells=NULL, row.names=TRUE) 
+{
     if (!is.null(cov.field)) {
         cov <- x[,cov.field]
         x <- x[cov==max(cov)]
@@ -83,8 +86,13 @@ countCellsPerGeneCombo <- function(x, gene.field, group=NULL, cov.field=NULL, do
         mat <- .downsample_matrix(mat, down.ncells)
     }
 
-    rownames(mat) <- NULL
-    rownames(y) <- NULL
+    if (row.names) {
+        rn <- do.call(paste, c(as.list(y), list(sep="|")))
+    } else {
+        rn <- NULL
+    }
+    rownames(mat) <- rownames(y) <- rn
+
     SummarizedExperiment(rowData=y, assays=list(counts=mat))
 }
 
