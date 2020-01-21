@@ -48,16 +48,17 @@ testGeneComboCountsBetweenGroups <- function(counts, ...) {
     nm <- colnames(counts)
     if (is.null(nm)) nm <- idx
 
-    collected.stats <- collected.pairs <- list()
-    counter <- 1L
-
     if (is(counts, "SummarizedExperiment")) {
         counts <- assay(counts)
     }
     totals <- colSums(counts)
 
+    collected.stats <- collected.pairs <- list()
+    counter <- 1L
+
     for (i in idx) {
-        for (j in seq_len(i-1)) {
+        for (j in idx) {
+            if (i==j) next
 
             p <- LOR <- numeric(nrow(counts))
             for (k in seq_along(p)) {
@@ -70,12 +71,10 @@ testGeneComboCountsBetweenGroups <- function(counts, ...) {
             collected.pairs[[counter]] <- DataFrame(first=nm[i], second=nm[j])
             collected.stats[[counter]] <- DataFrame(p.value=p, LOR=LOR, row.names=rownames(counts))
             counter <- counter + 1L
-
-            collected.pairs[[counter]] <- DataFrame(first=nm[j], second=nm[i])
-            collected.stats[[counter]] <- DataFrame(p.value=p, LOR=-LOR, row.names=rownames(counts))
-            counter <- counter + 1L
         }
     }
 
-    scran::combineMarkers(collected.stats, do.call(rbind, collected.pairs), effect.field="LOR", ...)
+    all.pairs <- do.call(rbind, collected.pairs)
+    o <- order(all.pairs$first, all.pairs$second)
+    scran::combineMarkers(collected.stats[o], all.pairs[o,,drop=FALSE], effect.field="LOR", ...)
 }
