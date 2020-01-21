@@ -10,7 +10,8 @@ countCellsPerGeneCombo(
   group = NULL,
   cov.field = NULL,
   downsample = FALSE,
-  down.ncells = NULL
+  down.ncells = NULL,
+  row.names = TRUE
 )
 }
 \arguments{
@@ -26,6 +27,8 @@ countCellsPerGeneCombo(
 
 \item{down.ncells}{Integer scalar indicating the number of cells to downsample each group to.
 Defaults to the number of cells in the smallest group in \code{group}.}
+
+\item{row.names}{Logical scalar indicating whether row names should be added by concatenating all gene names per combination.}
 }
 \value{
 A \linkS4class{SummarizedExperiment} where each row corresponds to a unique gene combination

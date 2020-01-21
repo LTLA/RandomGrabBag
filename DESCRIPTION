@@ -11,4 +11,6 @@ Imports:
     S4Vectors,
     IRanges,
     alakazam    
+Suggests:
+    scran
 RoxygenNote: 7.0.2
