@@ -51,7 +51,7 @@ though any problems are also probably minor.
 }
 \section{Normalization for cell number}{
 
-We quote \dQuote{expression} as this is defined in terms of number of cells expressing the gene,
+Here, expression is defined in terms of number of cells expressing the gene,
 rather than the more typical quantity of the number of reads or UMIs assigned to that gene.
 If the sequencing coverage varies between groups, 
 we assume that such changes have the same scaling effect on the probability of detecting each gene combination,

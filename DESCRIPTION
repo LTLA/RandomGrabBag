@@ -10,7 +10,8 @@ Description: Provides a set of miscellaneous functions
 Imports:
     S4Vectors,
     IRanges,
-    alakazam    
+    alakazam,
+    BiocParallel
 Suggests:
     scran
 RoxygenNote: 7.0.2
