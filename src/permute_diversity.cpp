@@ -8,14 +8,18 @@
 #include <cmath>
 
 template<class ITER>
-double compute_gini(ITER start, ITER end) {
+double compute_discrete_gini(ITER start, ITER end) {
     std::sort(start, end);
     double accumulated=0, current=0;
     for (auto copy=start; copy!=end; ++copy) {
         current += *copy;
         accumulated += current;
     }
-    return 1 - accumulated / (current * (current + 1)/2);   
+    if (current==0) {
+        return R_NaReal;
+    } else {
+        return 1 - accumulated / (current * (current + 1)/2);   
+    }
 }
 
 template<class ITER>
@@ -78,7 +82,7 @@ Rcpp::List permute_diversity(Rcpp::IntegerVector left, Rcpp::IntegerVector right
         sampled_left.clear();
         sampled_right.clear();
 
-        for (int swtch=0; swtch!=1; ++swtch) {
+        for (int swtch=0; swtch!=2; ++swtch) {
             const auto& pool=(swtch==0 ? left : right);
 
             for (int j=0; j<pool.size(); ++j) {
@@ -102,12 +106,12 @@ Rcpp::List permute_diversity(Rcpp::IntegerVector left, Rcpp::IntegerVector right
                     sampled_right.push_back(right_assign);
                 }
             }
-        }
- 
+       }
+
         // Computing differences in Gini indices and Hill numbers.
         if (use_gini) {
-            out_gini[i]=compute_gini(sampled_left.begin(), sampled_left.end()) - 
-                compute_gini(sampled_right.begin(), sampled_right.end());
+            out_gini[i]=compute_discrete_gini(sampled_left.begin(), sampled_left.end()) - 
+                compute_discrete_gini(sampled_right.begin(), sampled_right.end());
         }
         if (use_hill.size()) {
             auto curcol=out_hill.column(i);
