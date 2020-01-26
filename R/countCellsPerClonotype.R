@@ -78,6 +78,10 @@ countCellsPerClonotype <- function(x, clone.field, group=NULL, cov.field=NULL, d
     }
 
     ids <- unlist(x[,clone.field])
+
+    # Avoid generating zeros from levels absent in a particular group.
+    if (is.factor(ids)) { ids <- as.character(ids) } 
+
     if (is.null(group)) {
         out <- list(table(ids))
     } else {
@@ -115,5 +119,16 @@ countCellsPerClonotype <- function(x, clone.field, group=NULL, cov.field=NULL, d
     if (is.null(down.ncells)) {
         down.ncells <- min(vapply(counts, sum, 0L))
     }
-    lapply(counts, .downsample_counts, n=down.ncells)
+
+    for (i in seq_along(counts)) {
+        current <- counts[[i]]
+        current <- .downsample_counts(current, n=down.ncells)
+
+        # Important to strip out zeroes, as we don't report
+        # zero-frequency clonotypes anywhere else.
+        current <- current[current!=0L]
+        counts[[i]] <- current
+    }
+
+    counts
 }
