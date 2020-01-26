@@ -54,6 +54,7 @@
 #' @importFrom BiocParallel SerialParam bplapply
 #' @importFrom S4Vectors List
 testClonotypeCountsPairwise <- function(counts, 
+    use.gini=TRUE, use.hill=0:2,
     downsample=TRUE, down.ncells=NULL, 
     iterations=2000, adj.method="holm", BPPARAM=SerialParam()) 
 {
@@ -62,12 +63,11 @@ testClonotypeCountsPairwise <- function(counts,
     }
 
     res <- bplapply(seq_along(counts), BPPARAM=BPPARAM,
-        FUN=function(x, counts, use.gini, use.hill, iterations) 
-        {
+        FUN=function(x, counts, use.gini, use.hill, iterations) {
             results <- list() 
             for (y in seq_len(x-1L)) {
                 results[[y]] <- .generate_shuffled_diversity_p(counts[[x]], counts[[y]],
-                    iterations=iterations)
+                    use.gini=use.gini, use.hill=use.hill, iterations=iterations)
             }
             results
         }, counts=counts, use.gini=use.gini, use.hill=use.hill, iterations=iterations) 
