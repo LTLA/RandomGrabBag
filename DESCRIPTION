@@ -11,7 +11,13 @@ Imports:
     S4Vectors,
     IRanges,
     alakazam,
-    BiocParallel
+    BiocParallel,
+    Rcpp,
+    dqrng
 Suggests:
     scran
+LinkingTo:
+    Rcpp,
+    dqrng,
+    BH
 RoxygenNote: 7.0.2
