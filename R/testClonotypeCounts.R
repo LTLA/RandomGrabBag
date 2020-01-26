@@ -51,8 +51,9 @@
 #'
 #' @export
 #' @importFrom stats p.adjust
-#' @importFrom BiocParallel SerialParam bplapply
+#' @importFrom BiocParallel SerialParam bpmapply
 #' @importFrom S4Vectors List
+#' @importFrom dqrng generateSeedVectors
 testClonotypeCountsPairwise <- function(counts, 
     use.gini=TRUE, use.hill=0:2,
     downsample=TRUE, down.ncells=NULL, 
@@ -62,30 +63,29 @@ testClonotypeCountsPairwise <- function(counts,
         counts <- .downsample_list(counts, down.ncells)
     }
 
-    res <- bplapply(seq_along(counts), BPPARAM=BPPARAM,
-        FUN=function(x, counts, use.gini, use.hill, iterations) {
-            results <- list() 
-            for (y in seq_len(x-1L)) {
-                results[[y]] <- .generate_shuffled_diversity_p(counts[[x]], counts[[y]],
-                    use.gini=use.gini, use.hill=use.hill, iterations=iterations)
-            }
-            results
-        }, counts=counts, use.gini=use.gini, use.hill=use.hill, iterations=iterations) 
+    all.pairs <- combn(length(counts), 2)
+    all.seeds <- generateSeedVectors(ncol(all.pairs))
+    all.streams <- seq_len(ncol(all.pairs))
+
+    res <- bpmapply(x=all.pairs[1,], y=all.pairs[2,], rand.seed=all.seeds, rand.stream=all.streams,
+        FUN=function(x, y, counts, ...) .generate_shuffled_diversity_p(counts[[x]], counts[[y]], ...),
+        MoreArgs=list(counts=counts, use.gini=use.gini, use.hill=use.hill, iterations=iterations),
+        SIMPLIFY=FALSE, BPPARAM=BPPARAM)
 
     output <- list()
     if (length(counts) <= 1L) {
         stop("'counts' should contain at least two groups")
     }
-    all.stat.names <- names(res[[2]][[1]])
+    all.stat.names <- names(res[[1]])
 
     for (stat in all.stat.names) {
         current <- matrix(NA_real_, length(counts), length(counts))
         dimnames(current) <- list(names(counts), names(counts))
 
-        for (x in seq_along(res)) {
-            for (y in seq_along(res[[x]])) {
-                current[x,y] <- res[[x]][[y]][stat]
-            }
+        for (i in seq_len(ncol(all.pairs))) {
+            y <- all.pairs[1,i]
+            x <- all.pairs[2,i]
+            current[x,y] <- res[[i]][stat]
         }
 
         current[] <- p.adjust(current, method=adj.method)
@@ -96,16 +96,7 @@ testClonotypeCountsPairwise <- function(counts,
 }
 
 #' @importFrom S4Vectors Rle runValue runLength
-.generate_shuffled_diversity_p <- function(x, y, iterations, use.gini=TRUE, use.hill=0:2) {
-    # Clonotypes from different groups are effectively separate things,
-    # so we give them different labels to distinguish them.
-    labels <- seq_len(length(x) + length(y))
-    values <- c(unname(x), unname(y))
-    pool <- Rle(labels, values)
-
-    Nx <- sum(x)
-    N <- Nx + sum(y)
-
+.generate_shuffled_diversity_p <- function(x, y, iterations, use.gini, use.hill, rand.stream, rand.seed) {
     if (use.gini) {
         ref.gini <- abs(.compute_gini(x) - .compute_gini(y))
         out.gini <- 0L
@@ -115,30 +106,21 @@ testClonotypeCountsPairwise <- function(counts,
         out.hill <- integer(length(ref.hill))
     }
 
-    for (i in seq_len(iterations)) {
-        # sorting is VERY important here, to avoid need for re-table()ing.
-        chosen <- sort(sample(N, Nx)) 
-        left <- pool[chosen]
-        right <- pool[-chosen]
-
-        ldistr <- runLength(left)
-        rdistr <- runLength(right)
-
-        if (use.gini) {
-            out.gini <- out.gini + abs(.compute_gini(ldistr) - .compute_gini(rdistr))
-        }
-        if (length(use.hill)) {
-            out.hill <- out.hill + abs(calcDiversity(ldistr, use.hill) - calcDiversity(rdistr, use.hill))
-        }
-    }
-
+    permuted <- permute_diversity(x, y, iterations=iterations, 
+        use_gini=use.gini, use_hill=use.hill, 
+        seed=rand.seed, stream=rand.stream)
+    
     # Using Phipson & Smyth's approach:
     output <- numeric(0)
+
     if (use.gini) {
+        out.gini <- sum(abs(permuted[[1]]) >= ref.gini)
         output["gini"] <- (out.gini + 1)/(iterations+1)
     }
     if (length(use.hill)) {
+        out.hill <- rowSums(abs(permuted[[2]]) >= out.hill)
         output[sprintf("hill%i", use.hill)] <- (out.hill + 1)/(iterations+1)
     }
+
     output
 }
