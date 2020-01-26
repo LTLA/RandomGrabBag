@@ -36,14 +36,14 @@
 #' out <- countCellsPerGeneCombo(y, c("v_gene", "j_gene"), 
 #'    group=sample(3, length(y), replace=TRUE))
 #'
-#' de <- testGeneComboCountsBetweenGroups(out)
+#' de <- testGeneComboCountsPairwise(out)
 #' de[[1]]
 #'
 #' @export
 #' @importFrom stats fisher.test
 #' @importFrom SummarizedExperiment assay
 #' @importFrom S4Vectors DataFrame 
-testGeneComboCountsBetweenGroups <- function(counts, ...) {
+testGeneComboCountsPairwise <- function(counts, ...) {
     idx <- seq_len(ncol(counts))
     nm <- colnames(counts)
     if (is.null(nm)) nm <- idx
