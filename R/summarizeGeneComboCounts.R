@@ -34,7 +34,7 @@
 #'     j_gene=sample(c("TRAJ4", "TRAJ5", "TRAV6"), 30, replace=TRUE)
 #' )
 #'
-#' y <- splitToCells(df, field="cell.id")
+#' y <- splitDataFrameByCell(df, field="cell.id")
 #' out <- countCellsPerGeneCombo(y, c("v_gene", "j_gene"),
 #'    group=sample(10, length(y), replace=TRUE))
 #'

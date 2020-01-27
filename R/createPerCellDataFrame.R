@@ -32,16 +32,16 @@
 #'     umi=pmax(1, rpois(30, 1))
 #' )
 #'
-#' Y <- splitToCells(df, "cell.id")
-#' collapseToPerCellRows(Y, "umi")
+#' Y <- splitDataFrameByCell(df, "cell.id")
+#' createPerCellDataFrame(Y, "umi")
 #'
-#' collapseToPerCellRows(Y)
+#' createPerCellDataFrame(Y)
 #'
-#' collapseToPerCellRows(Y, fill=FALSE)
+#' createPerCellDataFrame(Y, fill=FALSE)
 #' 
 #' @export
 #' @importFrom utils head
-collapseToPerCellRows <- function(x, cov.field, fill=TRUE) {
+createPerCellDataFrame <- function(x, cov.field, fill=TRUE) {
     if (!missing(cov.field)) {
         cov <- x[,cov.field]
         y <- unlist(x[cov==max(cov)])

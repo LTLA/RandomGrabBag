@@ -72,7 +72,7 @@
 #'     umi=pmax(1, rpois(30, 5))
 #' )
 #'
-#' y <- splitToCells(df, field="cell.id")
+#' y <- splitDataFrameByCell(df, field="cell.id")
 #' out <- countCellsPerClonotype(y, "clonotype", cov.field="umi")
 #' out
 #'

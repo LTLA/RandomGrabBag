@@ -59,7 +59,7 @@
 #'     umi=pmax(1, rpois(30, 1))
 #' )
 #'
-#' y <- splitToCells(df, field="cell.id")
+#' y <- splitDataFrameByCell(df, field="cell.id")
 #' out <- countCellsPerGeneCombo(y, c("v_gene", "j_gene"), cov.field="umi")
 #' rowData(out)
 #' assay(out)

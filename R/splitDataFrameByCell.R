@@ -34,12 +34,12 @@
 #'     j_gene=sample(c("TRAJ4", "TRAJ5", "TRAV6"), 30, replace=TRUE)
 #' )
 #'
-#' splitToCells(df, field="cell.id")
+#' splitDataFrameByCell(df, field="cell.id")
 #'
-#' splitToCells(df, field="cell.id", universe=c(LETTERS, "AA"))
+#' splitDataFrameByCell(df, field="cell.id", universe=c(LETTERS, "AA"))
 #'     
 #' @export
 #' @importFrom S4Vectors split DataFrame
-splitToCells <- function(df, field, ids=df[[field]], universe=sort(unique(ids))) {
+splitDataFrameByCell <- function(df, field, ids=df[[field]], universe=sort(unique(ids))) {
     split(DataFrame(df), factor(ids, universe))
 }
