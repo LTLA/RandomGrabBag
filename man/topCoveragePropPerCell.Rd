@@ -45,7 +45,7 @@ df <- data.frame(
     umis=pmin(1, rnbinom(30, mu=2, size=1))
 )
 
-y <- splitToCells(df, field="cell.id")
+y <- splitDataFrameByCell(df, field="cell.id")
 topCoveragePropPerCell(y, "umis")
 }
 \author{

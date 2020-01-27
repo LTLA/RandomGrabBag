@@ -40,7 +40,7 @@ df <- data.frame(
     productive=sample(c("True", "False"), 30, replace=TRUE)
 )
 
-y <- splitToCells(df, field="cell.id")
+y <- splitDataFrameByCell(df, field="cell.id")
 countSequencesPerCell(y)
 countSequencesPerCell(y, filter.field="productive", filter.value="True")
 

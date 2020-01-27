@@ -7,6 +7,8 @@ Description: Provides a set of miscellaneous functions
     for analyzing repertoire sequencing data that should
     really find better homes in proper Bioconductor packages, but
     for the time being, they don't have a place to go.
+Depends:
+    SummarizedExperiment
 Imports:
     S4Vectors,
     IRanges,

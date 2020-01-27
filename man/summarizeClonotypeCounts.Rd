@@ -64,7 +64,7 @@ df <- data.frame(
     clonotype=sample(paste0("clonotype_", 1:5), 30, replace=TRUE)
 )
 
-y <- splitToCells(df, field="cell.id")
+y <- splitDataFrameByCell(df, field="cell.id")
 out <- countCellsPerClonotype(y, "clonotype",
    group=sample(3, length(y), replace=TRUE))
 

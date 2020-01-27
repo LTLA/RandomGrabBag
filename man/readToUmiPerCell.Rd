@@ -39,7 +39,7 @@ df <- data.frame(
     umis=rnbinom(30, mu=2, size=1)
 )
 
-y <- splitToCells(df, field="cell.id")
+y <- splitDataFrameByCell(df, field="cell.id")
 readToUmiPerCell(y, "reads", "umis")
 
 }

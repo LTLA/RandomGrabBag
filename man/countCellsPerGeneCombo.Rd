@@ -2,26 +2,37 @@
 % Please edit documentation in R/countCellsPerGeneCombo.R
 \name{countCellsPerGeneCombo}
 \alias{countCellsPerGeneCombo}
+\alias{countCellsPerGeneCombo,ANY-method}
+\alias{countCellsPerGeneCombo,CompressedSplitDataFrameList-method}
 \title{Count gene combinations}
 \usage{
-countCellsPerGeneCombo(
+countCellsPerGeneCombo(x, ...)
+
+\S4method{countCellsPerGeneCombo}{ANY}(
   x,
   gene.field,
   group = NULL,
-  cov.field = NULL,
   downsample = FALSE,
   down.ncells = NULL,
   row.names = TRUE
 )
+
+\S4method{countCellsPerGeneCombo}{CompressedSplitDataFrameList}(x, gene.field, cov.field, group = NULL, ...)
 }
 \arguments{
-\item{x}{A \linkS4class{SplitDataFrameList} where each \linkS4class{DataFrame} is a cell and each row is a sequence.}
+\item{x}{Any data.frame-like object where each row corresponds to a single cell and contains its representative sequence.
+Rows with any \code{NA} values in the specified \code{gene.field} columns are ignored.
+
+Alternatively, a \linkS4class{SplitDataFrameList} where each \linkS4class{DataFrame} corresponds to a cell 
+and each row in that DataFrame is a sequence in that cell.}
+
+\item{...}{For the generic, further arguments to pass to individual methods.
+
+For the \code{CompressedSplitDataFrameList} method, further arguments to pass to the ANY method.}
 
 \item{gene.field}{Character vector of names of columns of \code{x} containing the genes of interest (e.g., VDJ components).}
 
 \item{group}{Factor of length equal to \code{x} indicating the group to which each cell belongs.}
-
-\item{cov.field}{String specifying the column of \code{x} containing the read/UMI coverage.}
 
 \item{downsample}{Logical scalar indicating whether downsampling should be performed.}
 
@@ -29,6 +40,8 @@ countCellsPerGeneCombo(
 Defaults to the number of cells in the smallest group in \code{group}.}
 
 \item{row.names}{Logical scalar indicating whether row names should be added by concatenating all gene names per combination.}
+
+\item{cov.field}{String specifying the column of \code{x} containing the read/UMI coverage.}
 }
 \value{
 A \linkS4class{SummarizedExperiment} where each row corresponds to a unique gene combination
@@ -46,7 +59,9 @@ This can be useful to examine the effect of particular experimental conditions o
 especially if the specific biological function (e.g., antigen) of each gene combination is known in advance.
 
 If \code{cov.field} is set, only the most high-abundance sequence is used from each cell.
-It is probably safest to set this field to avoid potential complications from dependencies between counts,
+In contrast, setting \code{cov.field=NULL} will count each sequence separately,
+such that one cell may contribute multiple times.
+It is probably safest to set this to some non-\code{NULL} value to avoid complications from dependencies between counts,
 though any problems are also probably minor.
 }
 \section{Normalization for cell number}{
@@ -68,15 +83,16 @@ which eliminates uninteresting technical differences between groups from cell ca
 df <- data.frame(
     cell.id=sample(LETTERS, 30, replace=TRUE),
     v_gene=sample(c("TRAV1", "TRAV2", "TRAV3"), 30, replace=TRUE),
-    j_gene=sample(c("TRAJ4", "TRAJ5", "TRAV6"), 30, replace=TRUE)
+    j_gene=sample(c("TRAJ4", "TRAJ5", "TRAV6"), 30, replace=TRUE),
+    umi=pmax(1, rpois(30, 1))
 )
 
-y <- splitToCells(df, field="cell.id")
-out <- countCellsPerGeneCombo(y, c("v_gene", "j_gene"))
+y <- splitDataFrameByCell(df, field="cell.id")
+out <- countCellsPerGeneCombo(y, c("v_gene", "j_gene"), cov.field="umi")
 rowData(out)
 assay(out)
 
-out2 <- countCellsPerGeneCombo(y, c("v_gene", "j_gene"), 
+out2 <- countCellsPerGeneCombo(y, c("v_gene", "j_gene"), cov.field="umi",
    group=sample(10, length(y), replace=TRUE))
 rowData(out2)
 assay(out2)

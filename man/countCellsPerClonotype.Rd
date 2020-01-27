@@ -2,9 +2,13 @@
 % Please edit documentation in R/countCellsPerClonotype.R
 \name{countCellsPerClonotype}
 \alias{countCellsPerClonotype}
+\alias{countCellsPerClonotype,ANY-method}
+\alias{countCellsPerClonotype,CompressedSplitDataFrameList-method}
 \title{Count cells per clonotype}
 \usage{
-countCellsPerClonotype(
+countCellsPerClonotype(x, ...)
+
+\S4method{countCellsPerClonotype}{ANY}(
   x,
   clone.field,
   group = NULL,
@@ -12,9 +16,19 @@ countCellsPerClonotype(
   downsample = FALSE,
   down.ncells = NULL
 )
+
+\S4method{countCellsPerClonotype}{CompressedSplitDataFrameList}(x, clone.field, cov.field, group = NULL, ...)
 }
 \arguments{
-\item{x}{A \linkS4class{SplitDataFrameList} where each \linkS4class{DataFrame} is a cell and each row is a sequence.}
+\item{x}{Any data.frame-like object where each row corresponds to a single cell and contains its representative sequence.
+Rows with any \code{NA} values in the specified \code{clone.field} columns are ignored.
+
+Alternatively, a \linkS4class{SplitDataFrameList} where each \linkS4class{DataFrame} corresponds to a cell 
+and each row in that DataFrame is a sequence in that cell.}
+
+\item{...}{For the generic, further arguments to pass to individual methods.
+
+For the \code{CompressedSplitDataFrameList} method, further arguments to pass to the ANY method.}
 
 \item{clone.field}{String specifying the columns of \code{x} containing the clonotype identity.}
 
@@ -47,8 +61,10 @@ The exact effect probably depends on the nature of the antigen, e.g., the number
 that determine whether the expansion is spread across a larger number of clones.
 See the \code{\link{summarizeClonalExpansion}} function for more details.
 
-If \code{cov.field} is set, only the most high-abundance sequence is used from each cell.
-It is probably safest to set this field to avoid potential complications from dependencies between counts,
+When \code{cov.field} is specified, only the most high-abundance sequence is used from each cell.
+In contrast, setting \code{cov.field=NULL} will count each sequence separately,
+such that one cell may contribute multiple times.
+It is probably safest to set this to some non-\code{NULL} value to avoid complications from dependencies between counts,
 though any problems are also probably minor.
 
 Cells without any clonotype are completely ignored within this function,
@@ -79,14 +95,15 @@ allowing us to use the same downsampling solution above.
 \examples{
 df <- data.frame(
     cell.id=sample(LETTERS, 30, replace=TRUE),
-    clonotype=sample(paste0("clonotype_", 1:5), 30, replace=TRUE)
+    clonotype=sample(paste0("clonotype_", 1:5), 30, replace=TRUE),
+    umi=pmax(1, rpois(30, 5))
 )
 
-y <- splitToCells(df, field="cell.id")
-out <- countCellsPerClonotype(y, "clonotype")
+y <- splitDataFrameByCell(df, field="cell.id")
+out <- countCellsPerClonotype(y, "clonotype", cov.field="umi")
 out
 
-out2 <- countCellsPerClonotype(y, "clonotype",
+out2 <- countCellsPerClonotype(y, "clonotype", cov.field="umi",
    group=sample(3, length(y), replace=TRUE))
 out2
 

@@ -42,7 +42,7 @@ df <- data.frame(
     j_gene=sample(c("TRAJ4", "TRAJ5", "TRAV6"), 30, replace=TRUE)
 )
 
-y <- splitToCells(df, field="cell.id")
+y <- splitDataFrameByCell(df, field="cell.id")
 out <- countCellsPerGeneCombo(y, c("v_gene", "j_gene"), 
    group=sample(3, length(y), replace=TRUE))
 
