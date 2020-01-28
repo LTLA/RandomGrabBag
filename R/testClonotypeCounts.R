@@ -111,14 +111,12 @@ testClonotypeCountsPairwise <- function(counts,
 .generate_shuffled_diversity_p <- function(x, y, iterations, use.gini, use.hill, rand.stream, rand.seed) {
     if (use.gini) {
         ref.gini <- abs(.compute_gini(x) - .compute_gini(y))
-        out.gini <- 0L
     }
     if (length(use.hill)) {
-        ref.hill <- abs(calcDiversity(x, use.hill) - calcDiversity(x, use.hill))
-        out.hill <- integer(length(ref.hill))
+        ref.hill <- abs(calcDiversity(x, use.hill) - calcDiversity(y, use.hill))
     }
 
-    permuted <- permute_diversity(x, y, iterations=iterations, 
+    permuted <- permute_diversity(x, y, iterations=iterations,
         use_gini=use.gini, use_hill=use.hill, 
         seed=rand.seed, stream=rand.stream)
     
@@ -130,7 +128,7 @@ testClonotypeCountsPairwise <- function(counts,
         output["gini"] <- (out.gini + 1)/(iterations+1)
     }
     if (length(use.hill)) {
-        out.hill <- rowSums(abs(permuted[[2]]) >= out.hill)
+        out.hill <- rowSums(abs(permuted[[2]]) >= ref.hill)
         output[sprintf("hill%i", use.hill)] <- (out.hill + 1)/(iterations+1)
     }
 

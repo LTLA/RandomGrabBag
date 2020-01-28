@@ -42,8 +42,8 @@ double compute_hill(ITER start, ITER end, int hill_no) {
                 const double p=*copy/total;
                 output -= p*std::log(p);
             }
-            output=std::exp(output);
         }
+        output=std::exp(output);
     }
 
     return output;
