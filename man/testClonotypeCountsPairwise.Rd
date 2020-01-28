@@ -47,29 +47,43 @@ as computed using \code{\link{summarizeClonotypeCounts}}.
 The aim is to help to whether one group is significantly more or less diverse,
 providing evidence for differences in the rate of clonal expansion between clusters or conditions.
 
-Under the null hypothesis, two groups are derived from a pool of cells with the same clonotype composition.
-We randomly sample without replacement to obtain two permuted groups that match the size of the original groups,
-recompute the diversity indices in this permuted data 
-and calculate the absolute difference of the diversity indices between groups.
+Under the null hypothesis, two groups are derived from a pool of cells with the same clonotype composition (see below).
+We sample without replacement to obtain two permuted groups that match the size of the original groups,
+recompute the diversity indices for each permuted group and calculate the absolute difference of the indices.
 Our permutation p-value is computed by comparing the observed absolute difference with the null distribution,
 using the Phipson and Smyth (2010) approach to avoid p-values of zero.
 
 We repeat this process for each diversity index, e.g., Gini index, Hill numbers.
 This yields a matrix of p-values per index where each row and column represents a group.
 Within each index, we apply a multiple testing correction over all pairwise comparisons between groups.
+By default, we use the Holm-Bonferroni correction to control the FWER across all comparisons.
+}
+\section{Comments on testing}{
+
+The null distribution depends on the composition of the common pool of cells.
+This is not known so we approximate it by from the composition of the two groups being compared.
+We rank all clonotypes within each group and sum the frequencies of clonotypes with the same rank between groups,
+yielding a common population from which sampling without replacement is performed.
+
+We do not perform the more obvious strategy of creating a pool of clonotypes from both groups,
+e.g., by literally concatenating the respective integer vectors from \code{counts}.
+This strategy effectively doubles the number of available clonotypes used to compute the diversity indices,
+making it difficult to justify using the null distribution to compute a p-value upon comparison to the observed difference.
 
 Again, it is a good idea to downsample to ensure that all groups are of the same size.
 Otherwise, the permutation test will not be symmetric;
 it will only ever be significant if the larger group has the larger index.
 }
+
 \examples{
 df <- data.frame(
     cell.id=sample(LETTERS, 30, replace=TRUE),
-    clonotype=sample(paste0("clonotype_", 1:5), 30, replace=TRUE)
+    clonotype=sample(paste0("clonotype_", 1:5), 30, replace=TRUE),
+    umi=pmax(1, rpois(30, 2))
 )
 
 y <- splitDataFrameByCell(df, field="cell.id")
-out <- countCellsPerClonotype(y, "clonotype",
+out <- countCellsPerClonotype(y, "clonotype", cov.field="umi",
    group=sample(3, length(y), replace=TRUE))
 
 test.out <- testClonotypeCountsPairwise(out)
