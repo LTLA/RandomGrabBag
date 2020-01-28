@@ -60,6 +60,29 @@ Rcpp::List permute_diversity(Rcpp::IntegerVector left, Rcpp::IntegerVector right
     const int rtotal=std::accumulate(right.begin(), right.end(), 0L);
     const int total=ltotal+rtotal;
 
+    /* Creating the pool by adding the ranked frequencies. This gives a more
+     * realistic population composition under the null, in the sense that 
+     * the total number of clonotypes is similar to that in the two original
+     * groups when the null hypothesis is true. By comparison, literal pooling
+     * would double the number of clonotypes and halve the chance of selecting
+     * each one, which does not make a lot of sense.
+     */
+    const auto poolsize=std::max(left.size(), right.size());
+    std::vector<int> pool(poolsize);
+    {
+        std::vector<int> lpool(poolsize);
+        std::copy(left.begin(), left.end(), lpool.begin());
+        std::copy(right.begin(), right.end(), pool.begin());
+
+        std::sort(lpool.begin(), lpool.end());
+        std::sort(pool.begin(), pool.end());
+
+        auto lIt=lpool.begin();
+        for (auto pIt=pool.begin(); pIt!=pool.end(); ++pIt, ++lIt) {
+            *pIt += *lIt;
+        }
+    }
+
     pcg32 rng(dqrng::convert_seed<uint64_t>(seed), stream);
     boost::random::uniform_01<double> runif_gen;
 
@@ -82,31 +105,27 @@ Rcpp::List permute_diversity(Rcpp::IntegerVector left, Rcpp::IntegerVector right
         sampled_left.clear();
         sampled_right.clear();
 
-        for (int swtch=0; swtch!=2; ++swtch) {
-            const auto& pool=(swtch==0 ? left : right);
+        for (int j=0; j<pool.size(); ++j) {
+            int left_assign=0, right_assign=0;
+            int curpool=pool[j];
 
-            for (int j=0; j<pool.size(); ++j) {
-                int left_assign=0, right_assign=0;
-                int curpool=pool[j];
-
-                for (int k=0; k<curpool; ++k) {
-                    if (remaining_select && static_cast<double>(remaining_select)/remaining_total > runif_gen(rng)) {
-                        --remaining_select;
-                        ++left_assign;
-                    } else {
-                        ++right_assign;
-                    }
-                    --remaining_total;
+            for (int k=0; k<curpool; ++k) {
+                if (remaining_select && static_cast<double>(remaining_select)/remaining_total > runif_gen(rng)) {
+                    --remaining_select;
+                    ++left_assign;
+                } else {
+                    ++right_assign;
                 }
-
-                if (left_assign) {
-                    sampled_left.push_back(left_assign);
-                }
-                if (right_assign) {
-                    sampled_right.push_back(right_assign);
-                }
+                --remaining_total;
             }
-       }
+
+            if (left_assign) {
+                sampled_left.push_back(left_assign);
+            }
+            if (right_assign) {
+                sampled_right.push_back(right_assign);
+            }
+        }
 
         // Computing differences in Gini indices and Hill numbers.
         if (use_gini) {
