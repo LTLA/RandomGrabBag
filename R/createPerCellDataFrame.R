@@ -48,6 +48,7 @@ createPerCellDataFrame <- function(x, cov.field, fill=TRUE) {
     } else {
         # Getting the first element for each cell.
         keep <- c(1L, head(cumsum(lengths(x)), -1L)+1L)
+        keep <- keep[lengths(x)!=0]
         y <- unlist(x)[keep,,drop=FALSE]
     }
 

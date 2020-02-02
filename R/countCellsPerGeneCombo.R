@@ -82,8 +82,8 @@ setGeneric("countCellsPerGeneCombo", function(x, ...) standardGeneric("countCell
     y <- x[,gene.field]
     discard <- Reduce("|", lapply(y, is.na))
     if (any(discard)) {
-        y <- y[discard,]
-        group <- group[discard]
+        y <- y[!discard,]
+        group <- group[!discard]
     }
 
     ids <- selfmatch(y)
